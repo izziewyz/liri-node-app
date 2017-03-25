@@ -1,7 +1,9 @@
 // Load the fs package to read and write
 var fs = require("fs");
-var tkeys = require("./keys.js")
+var tkeys = require("./keys.js");
 var Twitter = require('twitter');
+var spotify = require('spotify');
+var request = require("request");
 
 var client = new Twitter({
   consumer_key: 'mwnhuPWgujBRyyzg1Eo140fjk',
@@ -25,15 +27,15 @@ switch (action) {
     break;
 
   case "spotify-this-song":
-    deposit();
+    spotifythissong();
     break;
 
   case "movie-this":
-    withdraw();
+    moviethis();
     break;
 
   case "do-what-it-says":
-    lotto();
+    dowhatitsays();
     break;
 }
 
@@ -47,56 +49,74 @@ client.get('statuses/user_timeline', params, function(error, tweets, response) {
     console.log(tweets);
   }
 });
-
-
-
-
-
-
 }
 
 // If the "Deposit" function is called...
-function deposit() {
+function spotifythissong() {
 
-  // We will add the value to the bank file.
-  fs.appendFile("bank.txt", ", " + value);
+  console.log(value);
 
-  // We will then print the value that was added (but we wont print the total).
-  console.log("Deposited " + value + ".");
+ 
+spotify.search({ type: 'track', query: value }, function(err, data) {
+    if ( err ) {
+        console.log('Error occurred: ' + err);
+        return;
+    }
+    //console.log(data.tracks)
+    console.log(data.tracks.items[0].artists[0].name);
+    console.log(data.tracks.items[0].album.href);
+    console.log(data.tracks.items[0].album.name);
+
+ 
+    // Do something with 'data' 
+});
+
 }
 
 // If the "Withdraw" function is called
-function withdraw() {
+function moviethis() {
 
-  // We will add a negative value to the bank file.
-  fs.appendFile("bank.txt", ", -" + value);
+var queryUrl = "http://www.omdbapi.com/?t=" + value + "&y=&plot=short&r=json";
 
-  // We will then print the value that was subtracted (but we wont print the total).
-  console.log("Withdrew " + value + ".");
+// This line is just to help us debug against the actual URL.
+//console.log(queryUrl);
+
+request(queryUrl, function(error, response, body) {
+
+  // If the request is successful
+  if (!error && response.statusCode === 200) {
+
+    // Parse the body of the site and recover just the imdbRating
+    // (Note: The syntax below for parsing isn't obvious. Just spend a few moments dissecting it).
+    
+    console.log(JSON.parse(body).Title);
+    console.log("Release Year: " + JSON.parse(body).Year);
+    console.log(JSON.parse(body).Rated);
+    console.log(JSON.parse(body).Country);
+    console.log(JSON.parse(body).Language);
+    console.log(JSON.parse(body).Plot);
+    console.log(JSON.parse(body).Actors);
+    console.log(JSON.parse(body).imdbRating);
+  }
+});
+
 }
 
 
 // If the "Lotto" function is called
-function lotto() {
+function dowhatitsays() {
 
   // We will subtract 25 cents
-  fs.appendFile("bank.txt", ", -.25");
+  fs.readFile("random.txt", "utf8",function(error,data){
+  	console.log(data);
+  	var dataArr = data.split(",");
+  	console.log(dataArr)
+  	if (dataArr[0] === "spotify-this-song") {
+  		var value = dataArr[1];
+  		spotifythissong();
 
-  // Then grab a random number
-  var chance = Math.floor((Math.random() * 10) + 1);
+  	}
+  })
 
-  // If the random number equals 1...
-  if (chance === 1) {
-
-    // We will then add $2 to the account.
-    fs.appendFile("bank.txt", ", 2");
-
-    // And tell the user the amount was added.
-    console.log("Congrats you won the lottery!");
-
-  // Otherwise we will tell them they lost 25 cents.
-  }
-  else {
-    console.log("Sorry. You just lost 25 cents. Maybe you should get a job instead.");
-  }
+ 
 }
